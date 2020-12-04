@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <base th:href="${#request.getContextPath() + '/'}"/>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script type="text/javascript" th:src="@{jquery.min.js}"></script>
+</head>
+<body>
+<table>
+    <thead>登录测试</thead>
+    <tbody>
+     <tr>
+         <td><input th:type="text" th:name="name" th:id="uname" th:placeholder="用户名"></td>
+     </tr>
+     <tr>
+         <td><input th:type="text" th:name="pass" th:id="password" th:placeholder="密码"></td>
+     </tr>
+    <tr>
+        <td><input th:type="button" th:value="登录" onclick="login()"></td>
+    </tr>
+    </tbody>
+</table>
+<input th:type="button" th:value="测试token" th:onclick="testToken()">
+</body>
+<script type="text/javascript">
+    function setHeader(xhr) {
+        xhr.setRequestHeader("Authorization",window.localStorage.token);
+    }
+   function testToken(){
+        $.ajax({
+            type:'post',
+            url:'testAll',
+            dataType:'json',
+            success:function (data) {
+                if(data.code==200){
+                    window.localStorage.token=data.token;
+                    alert(data.data);
+                }else {
+                    alert(data.msg);
+                }
+            },
+            beforeSend:setHeader
+        })
+   }
+function login() {
+    var name=$("#uname").val();
+    var password=$("#password").val();
+    $.ajax({
+        type:'post',
+        url:'login',
+        data:{
+            'name':name,
+            'pass':password
+        },
+        dataType:'json',
+        success:function(data){
+            if(data.code==200){
+               var token=data.token;
+               var localStorage=window.localStorage;
+               //localStorage 浏览器提供的存储空间  key-value
+               //查看方式 F12 Application里面  local storage 本地存储长期有效
+                //session storage  一次会话有效
+                localStorage.token=token;
+            }else {
+                alert(data.msg);
+            }
+        }
+    })
+
+}
+</script>
+
+
+
+</html>
