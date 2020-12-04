@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mybatis_study.dao.DepartmentMapper">
+
+    <!--
+             抽取可重用的sql片段。方便后面引用
+             1、sql抽取:经常将要查询的列名，或者插入用的列名抽取出来方便引用
+             2、include来引用已经抽取的sql;
+             3、include还可以自定义一些property，sql标签内部就能使用自定义的属性
+                     include-property:取值的正确方式${prop},#{不能使用这种方式}
+
+         -->
+    <sql id="baseColumn">
+        id,department_name,%{testColumn}
+    </sql>
+    <!--多列传值 封装成map-->
+    <resultMap id="getDeptById" type="com.mybatis_study.bean.Department">
+        <id column="id" property="id"/>
+        <id column="department_name" property="departmentName"/>
+        <collection property="employees"
+                    select="com.mybatis_study.dao.EmployeeMapper.getEmployeeByDeptId"
+                    column="{deptId=id,employeeId=id}">
+        </collection>
+    </resultMap>
+
+    <select id="getDepartmentById" resultMap="getDeptById">
+		select
+        <include refid="baseColumn">
+            <property name="testColumn" value="abc"/>
+        </include>
+		from t_department where id=#{id}
+	</select>
+
+    <!--
+    1、使用select标签定义调用存储过程
+    2、statementType="CALLABLE":表示要调用存储过程
+    3、{call procedure_name(params)}
+
+    <select id="" statementType="CALLABLE" databaseId="oracle">
+		{call hello_test(
+			#{start,mode=IN,jdbcType=INTEGER},
+			#{end,mode=IN,jdbcType=INTEGER},
+			#{count,mode=OUT,jdbcType=INTEGER},
+			#{emps,mode=OUT,jdbcType=CURSOR,javaType=ResultSet,resultMap=PageEmp}
+		)}
+	</select> -->
+</mapper>

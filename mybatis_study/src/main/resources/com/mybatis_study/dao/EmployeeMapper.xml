@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mybatis_study.dao.EmployeeMapper">
+    <!--
+    namespace:名称空间;指定为接口的全类名
+    id:唯一标识
+    resultType:返回值类型
+    #{id}:从传递过来的参数中取出id值
+    public Employee getEmpById(Integer id);
+     -->
+<!--    <cache type="org.mybatis.caches.ehcache.EhcacheCache"></cache>-->
+    <cache eviction="FIFO" flushInterval="60000" readOnly="false" size="1024"></cache>
+    <!--
+    eviction:缓存的回收策略：
+        • LRU – 最近最少使用的：移除最长时间不被使用的对象。
+        • FIFO – 先进先出：按对象进入缓存的顺序来移除它们。
+        • SOFT – 软引用：移除基于垃圾回收器状态和软引用规则的对象。
+        • WEAK – 弱引用：更积极地移除基于垃圾收集器状态和弱引用规则的对象。
+        • 默认的是 LRU。
+    flushInterval：缓存刷新间隔
+        缓存多长时间清空一次，默认不清空，设置一个毫秒值
+    readOnly:是否只读:
+        true:只读:mybatis认为所有从缓存中获取数据的操作都是只读操作,不会修改数据。
+                 mybatis为了加快获取速度,直接就会将数据在缓存中的引用交给用户。不安全,速度快。
+        false:非只读:mybatis觉得获取的数据可能会被修改。
+               mybatis会利用序列化&反序列的技术克隆一份新的数据给你。安全，速度慢
+    size:缓存存放多少元素:
+    type="":指定自定义缓存的全类名;实现Cache接口即可
+    -->
+
+    <select id="getEmployeeById" resultType="com.mybatis_study.bean.Employee" databaseId="mysql">
+		select id,last_name lastName,email,gender from t_employee where id = #{id}
+	</select>
+
+    <!-- public void updateEmp(Employee employee);  -->
+    <update id="updateEmp" databaseId="mysql" parameterType="com.mybatis_study.bean.Employee">
+		update t_employee
+		set last_name=#{lastName},email=#{email},gender=#{gender}
+		where id=#{id}
+	</update>
+
+    <delete id="deleteEmpById">
+		delete from t_employee where id=#{id}
+	</delete>
+
+    <!--parameterType:参数类型,可以省略
+    获取自增主键的值: 用不了!!! why???
+        mysql支持自增主键，自增主键值的获取，mybatis也是利用statement.getGeneratedKeys()；
+        useGeneratedKeys="true":使用自增主键获取主键值策略
+        keyProperty:指定对应的主键属性，也就是mybatis获取到主键值以后,将这个值封装给javaBean的哪个属性-->
+    <insert id="addEmp" parameterType="com.mybatis_study.bean.Employee">
+		insert into t_employee(last_name,email,gender)
+		values(#{lastName},#{email},#{gender})
+	</insert>
+
+    <!--
+        获取非自增主键的值：
+            Oracle不支持自增;Oracle使用序列来模拟自增;
+            每次插入的数据的主键是从序列中拿到的值；如何获取到这个值;
+         -->
+    <insert id="addEmpOracle" databaseId="oracle">
+        <!--
+        keyProperty:查出的主键值封装给javaBean的哪个属性
+        order="BEFORE":当前sql在插入sql之前运行
+               AFTER:当前sql在插入sql之后运行
+        resultType:查出的数据的返回值类型
+        BEFORE运行顺序：
+            先运行selectKey查询id的sql；查出id值封装给javaBean的id属性
+            在运行插入的sql；就可以取出id属性对应的值
+        AFTER运行顺序：
+            先运行插入的sql（从序列中取出新值作为id）；
+            再运行selectKey查询id的sql；
+         -->
+        <selectKey keyProperty="id" order="BEFORE" resultType="Integer">
+            <!-- 编写查询主键的sql语句 -->
+            <!-- BEFORE-->
+            select EMPLOYEES_SEQ.nextval from dual
+            <!-- AFTER：
+             select EMPLOYEES_SEQ.currval from dual -->
+        </selectKey>
+
+        <!-- 插入时的主键是从序列中拿到的 -->
+        <!-- BEFORE:-->
+        insert into employees(EMPLOYEE_ID,LAST_NAME,EMAIL)
+        values(#{id},#{lastName},#{email<!-- ,jdbcType=NULL -->})
+        <!-- AFTER:
+        insert into employees(EMPLOYEE_ID,LAST_NAME,EMAIL)
+        values(employees_seq.nextval,#{lastName},#{email}) -->
+    </insert>
+
+    <!-- ParamNameResolver 参数处理器
+    多个参数:mybatis会做特殊处理。
+        1、多个参数会被封装成 一个map，
+            key:param1...paramN,或者参数的索引也可以
+            value:传入的参数值
+        #{}就是从map中获取指定的key的值
+        2、@Param("id")
+            key:使用@Param注解指定的值
+            value：参数值
+        3、POJO 取属性即可,Map取key即可
+         -->
+    <select id="getEmpByIdAndLastName" resultType="com.mybatis_study.bean.Employee">
+ 		select * from t_employee where id = #{param1} and last_name=#{param2}
+ 	</select>
+
+    <!--
+    public Employee getEmp(@Param("id")Integer id,String lastName);
+    取值：id==>#{id/param1}   lastName==>#{param2}
+public Employee getEmp(Integer id,@Param("e")Employee emp);
+    取值：id==>#{param1} lastName===>#{param2.lastName/e.lastName}
+##特别注意:如果是Collection(List、Set)类型或者是数组，
+         也会特殊处理。也是把传入的list或者数组封装在map中。
+            key:Collection(collection),如果是List还可以使用这个key(list)  数组(array)
+public Employee getEmpById(List<Integer> ids);
+       建议直接 @Param("ids")
+    -->
+    <select id="getEmpById" resultType="com.mybatis_study.bean.Employee">
+ 		select * from t_employee where id = #{ids[0]}
+ 	</select>
+
+    <!--public Map<Integer, Employee> getEmpByLastNameLikeReturnMap(String lastName);  -->
+    <select id="getEmpByLastNameLikeReturnMap" resultType="java.util.Map">
+ 		select * from t_employee where last_name like #{lastName}
+ 	</select>
+
+    <!--public Map<String, Object> getEmpByIdReturnMap(Integer id);  -->
+    <select id="getEmpByIdReturnMap" resultType="map">
+ 		select * from t_employee where id=#{id}
+ 	</select>
+    <!-- public List<Employee> getEmpsByLastNameLike(String lastName); -->
+    <!--resultType：如果返回的是一个集合，要写集合中元素的类型  -->
+    <select id="getEmpByLastNameLike" resultType="com.mybatis_study.bean.Employee">
+		select * from t_employee where last_name like #{lastName}
+	</select>
+
+
+    <!--
+    #{}：可以获取map中的值或者pojo对象属性的值；
+    ${}：可以获取map中的值或者pojo对象属性的值；
+    select * from tbl_employee where id=${id} and last_name=#{lastName}
+    Preparing: select * from tbl_employee where id=2 and last_name=?
+        区别：
+            #{}:是以预编译的形式，将参数设置到sql语句中；PreparedStatement；防止sql注入
+            ${}:取出的值直接拼装在sql语句中；会有安全问题；
+            大多情况下，我们去参数的值都应该去使用#{};
+            原生jdbc不支持占位符的地方我们就可以使用${}进行取值
+            比如分表、排序。。。;按照年份分表拆分
+                select * from ${year}_salary where xxx;
+                select * from tbl_employee order by ${f_name} ${order}
+    #{}:更丰富的用法:
+        规定参数的一些规则:
+        javaType、 jdbcType、 mode（存储过程）、 numericScale、
+        resultMap、 typeHandler、 jdbcTypeName、 expression（未来准备支持的功能）；
+        jdbcType通常需要在某种特定的条件下被设置：
+            在我们数据为null的时候，有些数据库可能不能识别mybatis对null的默认处理。比如Oracle（报错）;
+            JdbcType OTHER:无效的类型;因为mybatis对所有的null都映射的是原生Jdbc的OTHER类型,oracle不能正确处理;
+            由于全局配置中;jdbcTypeForNull=OTHER；oracle不支持:两种办法
+            1、#{email,jdbcType=null};
+            2、jdbcTypeForNull=NULL
+             <setting name="jdbcTypeForNull" value="NULL"/>
+         -->
+
+    <select id="getEmployeeByDeptId" resultType="com.mybatis_study.bean.Employee">
+		select * from t_employee where d_id=#{map.deptId} and id = #{employeeId}
+	</select>
+
+
+    <!-- =======================鉴别器============================ -->
+    <!-- <discriminator javaType=""></discriminator>
+        鉴别器：mybatis可以使用discriminator判断某列的值，然后根据某列的值改变封装行为
+        封装Employee:
+            如果查出的是女生:就把部门信息查询出来,否则不查询;
+            如果是男生,把last_name这一列的值赋值给email;
+     -->
+    <resultMap type="com.mybatis_study.bean.Employee" id="MyEmpDis">
+        <id column="id" property="id"/>
+        <result column="last_name" property="lastName"/>
+        <result column="email" property="email"/>
+        <result column="gender" property="gender"/>
+        <!--
+            column：指定判定的列名
+            javaType：列值对应的java类型  -->
+        <discriminator javaType="string" column="gender">
+            <!--女生  resultType:指定封装的结果类型；不能缺少。/resultMap-->
+            <case value="0" resultType="com.mybatis_study.bean.Employee">
+                <association property="dId"
+                             select="com.mybatis_study.dao.DepartmentMapper.getDeptById"
+                             column="d_id">
+                </association>
+            </case>
+            <!--男生 ;如果是男生,把last_name这一列的值赋值给email; -->
+            <case value="1" resultType="com.mybatis_study.bean.Employee">
+                <id column="id" property="id"/>
+                <result column="last_name" property="lastName"/>
+                <result column="last_name" property="email"/>
+                <result column="gender" property="gender"/>
+            </case>
+        </discriminator>
+    </resultMap>
+
+    <!-- 两个内置参数:
+            不只是方法传递过来的参数可以被用来判断,取值。。。
+            mybatis默认还有两个内置参数:
+            _parameter:代表整个参数
+                单个参数: _parameter就是这个参数
+                多个参数:参数会被封装为一个map:_parameter就是代表这个map
+            _databaseId:如果配置了databaseIdProvider标签, _databaseId就是代表当前数据库的别名oracle
+         -->
+    <select id="getEmployeeTestInnerParameter" resultType="com.mybatis_study.bean.Employee">
+        <!-- bind: 可以将OGNL表达式的值绑定到一个变量中,方便后来引用这个变量的值 -->
+        <bind name="_lastName" value="'%'+lastName+'%'"/>
+        select * from employees
+        <if test="_databaseId=='mysql'">
+            <if test="_parameter!=null">
+                where last_name like #{lastName}
+            </if>
+        </if>
+        <if test="_databaseId=='oracle'">
+            <if test="_parameter!=null">
+                where last_name like #{_parameter.lastName}
+            </if>
+        </if>
+    </select>
+
+
+</mapper>
