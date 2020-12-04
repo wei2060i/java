@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <base th:href="${#request.getContextPath() + '/'}"/>
+    <meta charset="UTF-8">
+    <title>后台首页</title>
+    <link rel="stylesheet" type="text/css" th:href="@{easyui/themes/default/easyui.css}">
+    <link rel="stylesheet" type="text/css" th:href="@{easyui/themes/icon.css}">
+    <script type="text/javascript" th:src="@{easyui/jquery.min.js}"></script>
+    <script type="text/javascript" th:src="@{easyui/jquery.easyui.min.js}"></script>
+    <script type="text/javascript">
+        $(function(){
+            $('#tre').tree({
+                url:'menu',
+                onClick: function(node){
+                    //alert(node.text);  // 在用户点击的时候提示
+                    if($("#tre").tree("isLeaf", node.target)) {
+                        //判断是否是 叶节点
+                        if ($('#tab').tabs('getTab', node.text) == null) {
+                            $('#tab').tabs('add', {
+                                title: node.text,
+                                content:'<iframe frameborder="0" height="100%" width="100%" src="'+node.url+'"></iframe>',
+                                closable: true, //关闭 tab
+                            //  href: node.url, // 调用url显示内容,默认只加载body内容！！！！！！！
+                                tools:[{
+                                    iconCls:'icon-mini-refresh',
+                                    handler:function(){
+                                        console.log('tab的刷新工具栏refresh');
+                                    }
+                                }]
+                            });
+                        } else {
+                            $('#tab').tabs('select', node.text);
+                        }
+                    }
+                }
+            });
+        })
+    </script>
+</head>
+<body class="easyui-layout">
+<div data-options="region:'north' " style="height:80px;">
+    <h1>学习系统</h1>
+</div>
+<!--<div data-options="region:'south',title:'底部' " style="height:100px;"></div> -->
+<div data-options="region:'center',border:false" style="padding:0px;background:#eee;">
+    <div id="tab" class="easyui-tabs" style="width:500px;height:250px;" data-options="fit:true">
+       <div title="首页",style="padding:10px;display:none">
+            <h1>欢迎啊~~~~~~~~</h1>
+       </div>
+    </div>
+</div>
+<div data-options="region:'west',title:'菜单',border:false" style="width:200px;">
+    <ul id="tre"></ul>
+</div>
+</body>
+</html>

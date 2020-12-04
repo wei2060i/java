@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <base th:href="${#request.getContextPath() + '/'}"/>
+    <meta charset="UTF-8">
+    <title>学生列表</title>
+    <link rel="stylesheet" type="text/css" th:href="@{easyui/themes/default/easyui.css}">
+    <link rel="stylesheet" type="text/css" th:href="@{easyui/themes/icon.css}">
+    <script type="text/javascript" th:src="@{easyui/jquery.min.js}"></script>
+    <script type="text/javascript" th:src="@{easyui/jquery.easyui.min.js}"></script>
+    <script type="text/javascript" th:src="@{easyui/locale/easyui-lang-zh_CN.js}"></script>
+
+</head>
+<body th:border="0">
+<table id="dg" class="easyui-datagrid"
+       data-options="singleSelect:true,remoteSort:false,fitColumns:false,url:'queryStuByPage',method:'get'
+,pagination:true,pageSize:5,pageList:[5,10,15,50],rowStyler: function(index,row){
+		if (index %2==0){
+			return 'background-color:#FFAEB9;color:#fff;';
+		}
+	},toolbar: '#toolBar',fit:true,onLoadSuccess:function(){
+           $('.btn_update').linkbutton({text:'修改',plain:true,iconCls:'icon-edit'});
+           $('.btn_delete').linkbutton({text:'删除',plain:true,iconCls:'icon-remove'});
+	}">  <!--fit 容器的尺寸以适应它的父容器。-->
+    <thead>
+            <tr>
+                <th data-options="field:'checkbox',checkbox:'true'"></th>
+                <th data-options="field:'sort',sortable:true,width:50,editor:'numberbox'">编号</th>
+                <th data-options="field:'id',width:50,align:'center',formatter:function(value,row,index){
+				if (row.id){
+					return row.id+'号';
+				} else {
+					return value;
+				}
+			}">ID</th>
+                <th data-options="field:'name',width:80,align:'center',editor:'textbox'">姓名</th>
+                <th data-options="field:'remark',width:60,align:'center',editor:'textbox'">备注</th>
+                <th data-options="field:'operate',align:'center',width:150,formatter:formatOper">操作</th>
+            </tr>
+    </thead>
+</table>
+
+<div id="toolBar">
+    <a href="javascript:void(0)" th:onclick="Add()" class="easyui-linkbutton" data-options="iconCls:'icon-add',plain:true">添加</a>
+    <a href="javascript:void(0)" th:onclick="goUpdate()" class="easyui-linkbutton" data-options="iconCls:'icon-edit',plain:true">修改</a>
+    <a href="javascript:void(0)" th:onclick="saveUpdate()" class="easyui-linkbutton" data-options="iconCls:'icon-save',plain:true">保存</a>
+    <a href="javascript:void(0)" th:onclick="deleteStu()" class="easyui-linkbutton" data-options="iconCls:'icon-remove',plain:true">删除</a>
+</div>
+<div id="win" class="easyui-window" title="添加学生" style="width:350px;height:300px;text-align: center"
+     data-options="iconCls:'icon-save',modal:true,minimizable:false,maximizable:false">
+<div style="width:300px;padding-top:30px;padding-left: 30px">
+    <form id="form1" method="post">
+        <div style="margin-bottom:20px"><label>Name:</label>
+            <input class="easyui-textbox" name="name" data-options="required:true" />
+        </div>
+        <div style="margin-bottom:20px"><label>Remark:</label>
+            <input class="easyui-textbox" name="remark" data-options="required:true" />
+        </div>
+        <div style="margin-bottom:20px"><label>Sort:</label>
+            <input class="easyui-textbox" name="sort" data-options="required:true" />
+        </div>
+        <div style="text-align:center;padding:5px">
+            <a href="javascript:void(0)" class="easyui-linkbutton" onclick="submitForm()">提交</a>
+            <a href="javascript:void(0)" class="easyui-linkbutton" onclick="clearForm()">重置</a>
+        </div>
+    </form>
+</div>
+</div>
+</body>
+<script type="text/javascript">
+    // 表格 操作符
+    function formatOper(val,row,index) {
+        //样式必须在 onLoadSuccess上给
+        var s='<a href="javascript:void(0)" class="btn_update" onclick="ediStu(' + row.id + ')"></a>&nbsp;&nbsp;';
+        var s2='<a href="javascript:void(0)" class="btn_delete"  onclick="delStu(' + row.id+ ')"></a>';
+        return s+s2;
+    }
+        $(function (){
+        // 关闭窗口
+        $('#win').window('close');
+    })
+    var index=-1;
+    function goUpdate(){
+        //获取 选中的行
+        var row=$("#dg").datagrid("getSelected");
+        if(row != null){
+            // 关闭上一个 编辑框
+            $("#dg").datagrid("endEdit",index);
+            // 获取行号 getRowIndex  0开始
+             index=$("#dg").datagrid("getRowIndex",row);
+            $("#dg").datagrid("beginEdit",index);
+        }else{
+            $.messager.alert("操作错误","请勾选要修改的记录");
+        }
+    }
+    function saveUpdate() {
+        var row=$("#dg").datagrid("getSelected");
+        if(row != null){
+            index=$("#dg").datagrid("getRowIndex",row);
+            $("#dg").datagrid("endEdit",index);
+            // 提交数据
+            $.ajax({
+                url:"updateStu",
+                type:"post",
+                data:{
+                    'id':row.id,
+                    'sort':row.sort,
+                    'name':row.name,
+                    'remark':row.remark
+                },
+                dataType:"text",
+                success:function(result){
+                    $('#dg').datagrid('reload');//reload 保持在当前页
+                    alert(result);
+                },
+                error:function (error) {
+                    alert(error);
+                }
+            });
+        }else{
+            $.messager.alert("操作错误","请勾选要保存的记录");
+        }
+    }
+    function deleteStu() {
+        var row=$("#dg").datagrid("getSelected");
+        if(row != null){
+            $.messager.confirm("确认框","你确定删除id是"+row.id+"的记录",function (r) {
+                if(r){
+                        $.ajax({
+                            url: "deleteStu",
+                            type: "post",
+                            data:{"id":row.id},
+                            dataType:"text",
+                            success:function(result){
+                                $('#dg').datagrid('reload');//reload 保持在当前页
+                                alert(result);
+                            },
+                            error:function (error) {
+                                alert(error);
+                            }
+                        })
+                }
+            });
+        }else{
+            $.messager.alert("操作错误","请勾选要删除的记录");
+        }
+    }
+    function Add() {
+        $('#win').window('open');
+    }
+    function submitForm(){
+        $('#form1').form('submit',{
+            url:'addStu',
+            success:function(data){
+                alert(data);
+                $('#form1').form('clear');
+                $('#win').window('close');
+                $('#dg').datagrid('reload');
+            }
+        });
+    }
+    function clearForm(){
+        $('#form1').form('clear');
+    }
+  //  列按钮 测试
+    function ediStu(id) {
+        alert(id+"测试列按钮编辑");
+    }
+    function delStu(id) {
+        alert(id+"测试列按钮删除");
+    }
+</script>
+</html>
