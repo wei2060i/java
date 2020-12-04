@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <base th:href="${#request.getContextPath()+'/'}">
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script type="text/javascript" th:src="@{script/jquery-1.8.3.min.js}"></script>
+</head>
+<body>
+<form th:action="@{emp/}+${employee.id}" method="post">
+    <input type="hidden" th:id="_oldLastName" th:if="${employee.id!=null}" th:value="${employee.lastName}">
+    <input type="hidden" th:name="_method" th:value="put">
+    LastName:<input id="lastName" th:value="${employee.lastName !=null}?${employee.lastName}" type="text" name="lastName"><br/>
+    Email:<input th:value="${employee !=null}?${employee.email}" type="text" name="email"><br/>
+    Birth:<input th:value="${employee !=null}? ${#dates.format(employee.birth,'yyyy-MM-dd')}" type="text" name="birth"><br/>
+    department:<select th:name="department.id">
+    <option th:selected="${employee.department !=null}? ${department.id ==employee.department.id}" th:each="department : ${departments}" th:text="${department.departmentName}" th:value="${department.id}"></option>
+</select>
+    <input type="submit" th:value="Submit">
+</form>
+
+<script type="text/javascript">
+    $(function(){
+        $("#lastName").change(function(){
+            var val=$(this).val();
+            val=$.trim(val);
+            $(this).val(val);
+            //如果 lastName和之前的lastName 一样,就不发ajax ,直接alert(用户名可以用)
+            var _oldLastName=$("#_oldLastName").val();
+            _oldLastName=$.trim(_oldLastName);
+            if(_oldLastName!=null &&_oldLastName!=""&& _oldLastName==val){
+                alert("用户名可用");
+                return;
+            }
+            var args={"lastName":val,"date":new Date()};
+            $.post("ajaxValidateLastName",args,function(date){
+                        if(date=="0"){
+                            alert("用户名可用");
+                        }else if(date=="1"){
+                            alert("用户名不可用");
+                        }else {
+                            alert("alax错误");
+                        }
+            });
+        });
+    })
+</script>
+</body>
+</html>

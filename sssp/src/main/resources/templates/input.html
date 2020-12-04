@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <base th:href="${#request.getContextPath()+'/'}">
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script type="text/javascript" th:src="@{script/jquery-1.8.3.min.js}"></script>
+</head>
+<body>
+<form th:action="@{add}" method="post">
+    LastName:<input id="lastName"  type="text" name="lastName"><br/>
+    Email:<input  type="text" name="email"><br/>
+    Birth:<input  type="text" name="birth"><br/>
+    department:<select th:name="department.id">
+<option th:each="department : ${departments}" th:text="${department.departmentName}" th:value="${department.id}"></option>
+        </select>
+    <input type="submit" th:value="Submit">
+</form>
+<script type="text/javascript">
+    $(function(){
+        $("#lastName").change(function(){
+            var val=$(this).val();
+            val=$.trim(val);
+            $(this).val(val);
+            var args={"lastName":val,"date":new Date()};
+            $.post("ajaxValidateLastName",args,function(date){
+                        if(date=="0"){
+                            alert("用户名可用");
+                        }else if(date=="1"){
+                            alert("用户名不可用");
+                        }else {
+                            alert("alax错误");
+                        }
+            });
+        });
+    })
+</script>
+</body>
+</html>

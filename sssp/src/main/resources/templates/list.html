@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <base th:href="${#request.getContextPath()+'/'}">
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script type="text/javascript" th:src="@{script/jquery-1.8.3.min.js}"></script>
+</head>
+<body>
+<span th:if="${page == null || page.numberOfElements==0}" style="color:red;">没有记录啊</span>
+<table th:if="${page !=null || page.numberOfElements !=0}" border="1" cellpadding="10" cellspacing="0">
+    <tr>
+        <th>ID</th>
+        <th>LastName</th>
+        <th>Email</th>
+        <th>Birth</th>
+        <th>CreateTime</th>
+        <th>Department</th>
+        <th>Edit</th>
+        <th>Delete</th>
+    </tr>
+    <tr th:each="emp :${page.content}">
+        <td th:text="${emp.id}"></td>
+        <td id="lastName" th:text="${emp.lastName}"></td>
+        <td th:text="${emp.email}"></td>
+        <td th:text="${#dates.format(emp.birth,'yyyy-MM-dd')}"></td>
+        <td th:text="${#dates.format(emp.createTime,'yyyy-MM-dd hh:mm:ss')}"></td>
+        <td th:text="${emp.department.departmentName}"></td>
+        <td><a th:href="@{emp/}+${emp.id}">Edit</a></td>
+        <td><button th:onclick="|deleteById(${emp.id})|">Delete</button></td>
+    </tr>
+    <tr>
+        <td colspan="8">
+            共<span th:text="${page.totalElements}"></span>条记录&nbsp;
+            共<span th:text="${page.totalPages}"></span>页&nbsp;
+            当前第<span th:text="${page.number+1}"></span>页&nbsp;
+           <a th:if="${page.number} ge 1" th:href="@{'emps?pageNo='+${page.number+1-1}}">上一页</a>&nbsp;
+            <a th:if="${page.number +1} lt ${page.totalPages}" th:href="@{'emps?pageNo='+${page.number+1+1}}">下一页</a>
+        </td>
+    </tr>
+</table>
+<script type="text/javascript">
+    function deleteById(id){
+        var flag=confirm("确定删除id是"+id+"的信息吗？");
+        if(flag){
+            $.ajax({
+                type:"delete",
+                url:"emp/"+id,
+                dataType:"json",
+                success:function(result){
+                    if(result ==true) {
+                        alert("删除成功");
+                        window.location.href="emps";
+                    }else{
+                     alert("删除失败");
+                    }
+                }
+            });
+            return true;
+        }
+        return false;
+    }
+</script>
+</body>
+</html>
