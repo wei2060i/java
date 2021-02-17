@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <base th:href="${#request.getContextPath() + '/'}"/>
+    <title>Netty测试</title>
+    <script type="text/javascript" th:src="jquery-2.1.0.js"></script>
+    <script>
+        var websocket;
+        $(function () {
+            if(window.WebSocket){
+                init() ;
+            } else {
+              alert("浏览器不支持websocket")
+            }
+        })
+        function init() {
+            var info = $("#info_div");
+            websocket=new WebSocket("ws://127.0.0.1:8181/abc");
+            // 设置webSocket 的回调方法
+            websocket.onopen=function (){
+                console.log("连接成功");
+                info[0].innerHTML+="状态：连接上服务器！<br/>";
+                info[0].scrollTop =info[0].scrollHeight;
+                //开始发送心跳
+                heart();
+                //定时断开连接
+                closeTimer();
+            }
+            //设置服务器响应的消息
+            websocket.onmessage = function (data) {
+                var msg = data.data;
+                if (msg != "heart") {
+                    info[0].innerHTML += "接收到服务器的消息: " + msg + "<br/>";
+                    info[0].scrollTop = info[0].scrollHeight;
+                } else {
+                    //这是一个心跳回复的消息
+                    console.log("收到一个心跳回复！");
+                    //没有收到心跳， 就关闭定时器
+                    clearTimeout(time);
+                    time = null;
+                    //再次开启定时器 定时关闭服务器连接
+                    closeTimer();
+                }
+            }
+            websocket.onclose = function() {
+                info[0].innerHTML+="状态：断开了和服务器的连接！<br/>";
+                info[0].scrollTop =info[0].scrollHeight;
+                //关闭心跳的发送
+                clearInterval(heartTime);
+                //尝试进行重连
+                reconn();
+            }
+            websocket.onerror = function() {
+                info[0].innerHTML+="状态：连接发生异常！<br/>";
+                info[0].scrollTop =info[0].scrollHeight;
+            }
+        }
+        //发送心跳数据  5秒
+        var heartTime = null;
+        function heart() {
+            heartTime = setInterval(function() {
+                websocket.send("heart");
+            }, 5000);
+        }
+        //定时关闭WebSocket连接 10 S后执行一次函数
+        var time;
+        function closeTimer() {
+            time = setTimeout(function() {
+                //断开和websocket服务器的连接
+                websocket.close();
+            }, 10000);
+        }
+        //服务器的重连
+        function reconn() {
+            setTimeout(function(){
+                var info=$("#info_div");
+                info[0].innerHTML+="reconn:开始进行重连...<br/>";
+                info[0].scrollTop =info[0].scrollHeight;
+                init();
+            }, 5000);
+        }
+        //发送消息到服务器
+        function sendMsg() {
+            var info= $("#info_send").val();
+            //展示到div中
+            var info_div=$("#info_div");
+            info_div[0].innerHTML+="send info："+ info + "<br/>";
+            info_div[0].scrollTop =info_div[0].scrollHeight;
+            //发送消息
+            websocket.send(info);
+        }
+        /*
+        setInterval()会不停的调用函数
+        setTimeout()只执行函数一次
+         */
+    </script>/head>
+<body>
+状态栏：
+<div id="info_div" style="width: 400px; height: 300px;overflow-y:auto;border: 1px solid #000000;"></div>
+输入框：
+<input id="info_send" />
+<button onclick="sendMsg();">发送消息</button>
+</body>
+</html>
