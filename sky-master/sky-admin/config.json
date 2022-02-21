@@ -1,0 +1,14 @@
+{
+  "projectName": "sky-admin",
+  "projectPath": "D:\\java\\healthy_info\\sky-master",
+  "projectPackages": "src\\main\\java\\com",
+  "moduleMap": {
+    "admin": {
+      "SpAdmin": "管理员表",
+      "UserRole": "用户角色表",
+      "Role": "角色表",
+      "RolePower": "角色权限表",
+      "Power": "权限表"
+    }
+  }
+}
